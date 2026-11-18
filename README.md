@@ -174,7 +174,7 @@ Don't open the host panel on the projector laptop — the host controls belong o
   including via direct API calls. For stricter control you'd need logins or one-time codes.
 - **Capacity:** each vote is one tiny function call and one row update; Supabase's free tier handles a class of 50–200
   easily. All clients listen to a single row, so Realtime traffic stays small.
-- **Fonts:** Urbanist from Google Fonts (falls back to system fonts offline).
+- **Fonts:** Fraunces (headlines) + DM Sans (UI) from Google Fonts (falls back to system fonts offline).
 - Old sessions can be deleted in the Table Editor (`sessions`) — related secrets, participants and votes are removed
   automatically (`on delete cascade`).
 
