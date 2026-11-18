@@ -1,13 +1,16 @@
 import { useEffect } from 'react';
-import { QrCode } from '../components/ui.jsx';
+import { Scene, QrCode, CountPill } from '../components/ui.jsx';
 import { voteUrl, prettyUrl, isLocalHostUrl } from '../lib/results.js';
+import { isConfigured } from '../lib/supabase.js';
+import { useLiveSession } from '../hooks/useLiveSession.js';
 
 /**
- * Projector view: nothing but the QR code (and the short link under it).
- * Click anywhere or press F for fullscreen.
+ * Projector view: the QR code (plus the short link and a live "joined" counter).
+ * Double-click or press F for fullscreen.
  */
 export default function ScreenPage({ sessionId }) {
   const url = voteUrl(sessionId);
+  const { session } = useLiveSession(isConfigured ? sessionId : null, { pollMs: 5000 });
 
   useEffect(() => {
     const onKey = (e) => {
@@ -18,17 +21,31 @@ export default function ScreenPage({ sessionId }) {
   }, []);
 
   return (
-    <div className="qr-screen" onDoubleClick={toggleFullscreen} title="Double-click or press F for fullscreen">
-      {isLocalHostUrl(url) && (
-        <div className="warn-banner" role="alert">
-          This QR code points to <b>{prettyUrl(url)}</b>, which phones cannot open. Use the deployed site or set{' '}
-          <code>VITE_PUBLIC_APP_URL</code>.
+    <div onDoubleClick={toggleFullscreen} title="Double-click or press F for fullscreen">
+      <Scene
+        theme="cream"
+        decor="qr"
+        className="scene--projector"
+        right={session ? <CountPill count={session.joined_count} theme="cream" /> : null}
+      >
+        {isLocalHostUrl(url) && (
+          <p className="notice">
+            This QR code points to <b>{prettyUrl(url)}</b>, which phones cannot open. Use the deployed site or set{' '}
+            <code>VITE_PUBLIC_APP_URL</code>.
+          </p>
+        )}
+        <div className="stack stack--center grow projector">
+          <h1 className="title title--xl">
+            Scan the QR code
+            <br />
+            to join the vote!
+          </h1>
+          <div className="qr-frame">
+            <QrCode value={url} />
+          </div>
+          <p className="url-pill">{prettyUrl(url)}</p>
         </div>
-      )}
-      <div className="qr-screen__inner">
-        <QrCode value={url} className="qr--screen" />
-        <p className="qr-screen__url">{prettyUrl(url)}</p>
-      </div>
+      </Scene>
     </div>
   );
 }

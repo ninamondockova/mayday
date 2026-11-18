@@ -3,7 +3,7 @@ import { POLL } from '../config/poll.js';
 import { rpc } from '../lib/supabase.js';
 import { getParticipantId, getItem, setItem, removeItem } from '../lib/storage.js';
 import { useLiveSession } from '../hooks/useLiveSession.js';
-import { Brand, ConnectionDot, Spinner, Ocean, Highlight, ArrowIcon, CheckIcon, LockIcon } from '../components/ui.jsx';
+import { Scene, ConnectionDot, Spinner, Sparkles, CheckBurst, ShipArt, OptionIcon, GoButton, CountPill } from '../components/ui.jsx';
 import { ResultsBars, WinnerBanner } from '../components/ResultsBars.jsx';
 
 /** Retry idempotent calls on network hiccups (classroom Wi-Fi under load). */
@@ -96,175 +96,135 @@ export default function VotePage({ sessionId }) {
 
   /* ---------- render ---------- */
 
+  const conn = <ConnectionDot connection={connection} />;
+  const live = connection === 'live';
+
   if (phase === 'loading' || (phase === 'ready' && !session)) {
     return (
-      <Shell connection={connection}>
-        <div className="center grow">
+      <Scene theme="cream" right={conn}>
+        <div className="stack stack--center grow">
           <Spinner label="Joining the vote…" />
         </div>
-      </Shell>
+      </Scene>
     );
   }
 
-  if (phase === 'notfound') {
+  if (phase === 'notfound' || phase === 'error') {
     return (
-      <Shell connection={connection}>
-        <Message
-          tone="error"
-          title="Room not found"
-          text="This voting room doesn't exist anymore. Scan the QR code on the main screen again."
-        />
-      </Shell>
-    );
-  }
-
-  if (phase === 'error') {
-    return (
-      <Shell connection={connection}>
-        <Message tone="error" title="Can't connect" text={errorMsg}>
-          <button className="go-btn" onClick={join}>
-            <span className="go-btn__icon">
-              <ArrowIcon />
-            </span>
-            <span className="go-btn__label">Try again</span>
-          </button>
-        </Message>
-      </Shell>
+      <Scene theme="blue" right={conn}>
+        <div className="stack stack--center grow">
+          <ShipArt />
+          <h1 className="title title--lg">{phase === 'notfound' ? 'Room not found' : "Can't connect"}</h1>
+          <p className="lead">
+            {phase === 'notfound' ? 'Scan the QR code on the main screen again.' : errorMsg}
+          </p>
+          {phase === 'error' && <GoButton label="Try again" onClick={join} />}
+        </div>
+      </Scene>
     );
   }
 
   const status = session.status;
+  const pill = (theme) => <CountPill count={session.joined_count} theme={theme} />;
+
+  // Results are revealed: everyone sees them (with their own vote marked)
+  if (status === 'results') {
+    return (
+      <Scene theme="cream" right={<CountPill count={session.votes_a + session.votes_b} label="total votes" />}>
+        <div className="stack grow">
+          <ResultsBars session={session} highlight={myVote} />
+          <WinnerBanner session={session} />
+        </div>
+      </Scene>
+    );
+  }
 
   if (myVote) {
-    if (status === 'results') {
-      return (
-        <Shell connection={connection}>
-          <div className="card phone-results">
-            <p className="eyebrow">{POLL.question}</p>
-            <WinnerBanner session={session} variant="compact" />
-            <ResultsBars session={session} variant="compact" highlight={myVote} />
-          </div>
-        </Shell>
-      );
-    }
     return (
-      <Shell connection={connection}>
-        <div className="card counted">
-          <span className="counted__check" aria-hidden="true">
-            <CheckIcon />
-          </span>
-          <h1 className="h-title counted__title">
-            Your vote has been <mark className="hl">counted!</mark>
+      <Scene theme="cream" right={live ? pill('cream') : conn}>
+        <div className="stack stack--center grow">
+          <CheckBurst />
+          <h1 className="title title--lg">
+            Your vote
+            <br />
+            has been counted!
           </h1>
-          <p className="muted">Results will appear right here when the host reveals them.</p>
-          <div className={`counted__choice counted__choice--${myVote.toLowerCase()}`}>
-            <span className="counted__letter">{myVote}</span>
-            <span>{POLL.options[myVote]?.label}</span>
-          </div>
+          <p className="chip">
+            <OptionIcon name={POLL.options[myVote]?.icon} />
+            {POLL.options[myVote]?.label}
+          </p>
+          <p className="lead">The results will appear here when the host reveals them.</p>
         </div>
-      </Shell>
+      </Scene>
     );
   }
 
   if (status === 'waiting') {
     return (
-      <Shell connection={connection}>
-        <div className="hero-card lobby">
-          <Ocean tone="calm" yacht />
-          <div className="hero-card__content">
-            <p className="eyebrow eyebrow--light">You&apos;re in</p>
-            <h1 className="h-display h-display--light">
-              Get <mark className="hl">ready</mark>
+      <Scene theme="cream" right={live ? pill('cream') : conn}>
+        <div className="stack stack--center grow">
+          <Sparkles>
+            <h1 className="title title--lg">
+              You&apos;re
+              <br />
+              on board!
             </h1>
-            <p className="hero-card__hint">Voting opens as soon as the host starts it. Keep this page open.</p>
-            <div className="waiting-ring" aria-hidden="true">
-              <span>Wait</span>
-            </div>
+          </Sparkles>
+          <p className="lead">Voting starts as soon as the host opens it. Keep this page open.</p>
+          <div className="dots" aria-hidden="true">
+            <i /> <i /> <i />
+          </div>
+          <div className="preview">
+            <span className="preview__label">The question</span>
+            <span className="preview__text">{POLL.question}</span>
           </div>
         </div>
-        <div className="card lobby__preview">
-          <span className="eyebrow">The question</span>
-          <p>{POLL.question}</p>
-        </div>
-      </Shell>
+      </Scene>
     );
   }
 
   if (status === 'voting') {
     return (
-      <Shell connection={connection}>
-        <div className="ballot">
-          <p className="eyebrow eyebrow--live">
-            <i aria-hidden="true" /> Voting is open
-          </p>
-          <h1 className="h-title ballot__q">
-            <Highlight text={POLL.question} mark={POLL.questionHighlight} />
-          </h1>
-          <div className="ballot__buttons">
+      <Scene theme="blue" right={live ? pill('blue') : conn}>
+        <div className="stack grow">
+          <Sparkles>
+            <h1 className="title title--lg">{POLL.question}</h1>
+          </Sparkles>
+          <div className="choices">
             {['A', 'B'].map((k) => (
               <button
                 key={k}
-                className={`vote-btn vote-btn--${k.toLowerCase()} ${pending === k ? 'is-pending' : ''} ${
-                  pending && pending !== k ? 'is-dim' : ''
-                }`}
+                className={`choice ${pending === k ? 'is-pending' : ''} ${pending && pending !== k ? 'is-dim' : ''}`}
                 onClick={() => vote(k)}
                 disabled={Boolean(pending)}
                 aria-label={`Vote ${k}: ${POLL.options[k].label}`}
               >
-                <Ocean tone={POLL.options[k].tone} />
-                <span className="letter-chip">{k}</span>
-                <span className="vote-btn__label">{POLL.options[k].label}</span>
-                <span className="vote-btn__go">{pending === k ? <span className="mini-spin" /> : <ArrowIcon />}</span>
+                <OptionIcon name={POLL.options[k].icon} />
+                <span className="choice__label">{POLL.options[k].label}</span>
+                {pending === k && <span className="choice__sending">Sending…</span>}
               </button>
             ))}
           </div>
           {submitError ? (
-            <p className="form-error" role="alert">
+            <p className="notice" role="alert">
               {submitError}
             </p>
           ) : (
-            <p className="muted ballot__note">One tap. One vote. No take-backs.</p>
+            <p className="hint">One tap · one vote</p>
           )}
         </div>
-      </Shell>
+      </Scene>
     );
   }
 
-  // closed or results without a vote
+  // closed (participant did not vote)
   return (
-    <Shell connection={connection}>
-      {status === 'results' ? (
-        <div className="card phone-results">
-          <p className="eyebrow">Voting is closed</p>
-          <WinnerBanner session={session} variant="compact" />
-          <ResultsBars session={session} variant="compact" />
-        </div>
-      ) : (
-        <Message tone="closed" title="Voting is closed" text="No more votes are being accepted." icon={<LockIcon />} />
-      )}
-    </Shell>
-  );
-}
-
-function Shell({ children, connection }) {
-  return (
-    <div className="screen phone">
-      <header className="phone__top">
-        <Brand compact />
-        <ConnectionDot connection={connection} />
-      </header>
-      <main className="phone__main">{children}</main>
-    </div>
-  );
-}
-
-function Message({ title, text, tone, children, icon = null }) {
-  return (
-    <div className={`card message message--${tone}`}>
-      {icon && <span className="round-icon">{icon}</span>}
-      <h1 className="h-title message__title">{title}</h1>
-      {text && <p className="muted">{text}</p>}
-      {children}
-    </div>
+    <Scene theme="blue" decor="closed" right={conn}>
+      <div className="stack stack--center grow">
+        <ShipArt />
+        <h1 className="title title--lg">Voting is closed</h1>
+        <p className="lead">Thanks for participating!</p>
+      </div>
+    </Scene>
   );
 }

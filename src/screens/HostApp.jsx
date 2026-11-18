@@ -5,18 +5,17 @@ import { loadHost, saveHost, clearHost } from '../lib/storage.js';
 import { voteUrl, screenUrl, prettyUrl, isLocalHostUrl } from '../lib/results.js';
 import { useLiveSession } from '../hooks/useLiveSession.js';
 import {
-  Brand,
-  StatusPill,
+  Scene,
   ConnectionDot,
   AnimatedNumber,
   BumpNumber,
-  PeopleStack,
-  Ocean,
-  Highlight,
-  ArrowIcon,
-  CheckIcon,
-  LockIcon,
   Spinner,
+  Sparkles,
+  ShipArt,
+  OptionIcon,
+  GoButton,
+  CountPill,
+  CheckIcon,
 } from '../components/ui.jsx';
 import { ResultsBars, WinnerBanner } from '../components/ResultsBars.jsx';
 
@@ -59,9 +58,11 @@ export default function HostApp() {
 
   if (checking) {
     return (
-      <div className="screen phone center">
-        <Spinner label="Restoring session…" />
-      </div>
+      <Scene theme="cream">
+        <div className="stack stack--center grow">
+          <Spinner label="Restoring session…" />
+        </div>
+      </Scene>
     );
   }
 
@@ -93,7 +94,7 @@ function PasscodeForm({ onCreated, submitLabel = 'Open voting room', autoFocus =
 
   return (
     <form className="passcode" onSubmit={submit}>
-      <label htmlFor="passcode" className="eyebrow">
+      <label htmlFor="passcode" className="label">
         Host passcode
       </label>
       <input
@@ -103,10 +104,10 @@ function PasscodeForm({ onCreated, submitLabel = 'Open voting room', autoFocus =
         value={passcode}
         onChange={(e) => setPasscode(e.target.value)}
         autoFocus={autoFocus}
-        placeholder="••••••••"
+        placeholder="••••••"
       />
       {error && (
-        <p className="form-error" role="alert">
+        <p className="notice" role="alert">
           {error}
         </p>
       )}
@@ -115,43 +116,23 @@ function PasscodeForm({ onCreated, submitLabel = 'Open voting room', autoFocus =
   );
 }
 
-function GoButton({ label, onClick, disabled, type = 'button', tone = 'go' }) {
-  return (
-    <button className={`go-btn go-btn--${tone}`} type={type} onClick={onClick} disabled={disabled}>
-      <span className="go-btn__icon">
-        {tone === 'stop' ? <span className="stop-square" aria-hidden="true" /> : <ArrowIcon />}
-      </span>
-      <span className="go-btn__label">{label}</span>
-      <span className="go-btn__chev" aria-hidden="true">
-        »
-      </span>
-    </button>
-  );
-}
-
 function HostLogin({ onCreated }) {
   return (
-    <div className="screen phone">
-      <header className="phone__top">
-        <Brand compact />
-        <span className="conn">Host</span>
-      </header>
-      <main className="phone__main">
-        <div className="hero-card host-hero">
-          <Ocean tone="calm" yacht />
-          <div className="hero-card__content">
-            <p className="eyebrow eyebrow--light">{APP_TAGLINE}</p>
-            <h1 className="h-display h-display--light">
-              Let&apos;s start <mark className="hl">the vote</mark>
-            </h1>
-          </div>
-        </div>
-        <div className="card">
-          <p className="muted">Enter the host passcode to open a new voting room. You control everything from this phone.</p>
+    <Scene theme="cream" right={<span className="tag">Host</span>}>
+      <div className="stack stack--center grow">
+        <Sparkles>
+          <h1 className="title title--lg">
+            Host
+            <br />
+            the vote
+          </h1>
+        </Sparkles>
+        <p className="lead">{APP_TAGLINE}. You run the whole vote from this phone.</p>
+        <div className="panel">
           <PasscodeForm onCreated={onCreated} />
         </div>
-      </main>
-    </div>
+      </div>
+    </Scene>
   );
 }
 
@@ -188,124 +169,124 @@ function HostStage({ host, onCreated, onLost }) {
 
   if (!session) {
     return (
-      <div className="screen phone center">
-        <Spinner label="Connecting to the voting room…" />
-      </div>
+      <Scene theme="cream">
+        <div className="stack stack--center grow">
+          <Spinner label="Connecting to the voting room…" />
+        </div>
+      </Scene>
     );
   }
 
   const status = session.status;
   const voted = session.votes_a + session.votes_b;
   const joined = Math.max(session.joined_count, voted);
+  const theme = status === 'voting' || status === 'closed' ? 'blue' : 'cream';
+  const right = (
+    <div className="top-right">
+      <ConnectionDot connection={connection} />
+      <CountPill
+        count={status === 'results' ? voted : joined}
+        label={status === 'results' ? 'total votes' : 'joined'}
+        theme={theme}
+      />
+    </div>
+  );
+
+  const footer = (
+    <div className="host-footer">
+      <span className="host-code">Room #{session.id}</span>
+      <button className="link-btn" onClick={() => setShowNew(true)}>
+        New session
+      </button>
+    </div>
+  );
 
   return (
-    <div className="screen phone">
-      <header className="phone__top">
-        <Brand compact />
-        <div className="phone__top-right">
-          <ConnectionDot connection={connection} />
-          <button className="chip-btn" onClick={() => setShowNew(true)}>
-            New
-          </button>
-        </div>
-      </header>
-
-      <main className="phone__main host-panel" key={status}>
-        <div className="host-panel__status">
-          <StatusPill status={status} />
-          <span className="host__code">#{session.id}</span>
-        </div>
-
-        {status === 'waiting' && (
-          <>
-            <div className="hero-card host-hero">
-              <Ocean tone="calm" yacht />
-              <div className="hero-card__content">
-                <p className="eyebrow eyebrow--light">Joined so far</p>
-                <div className="host-hero__count">
-                  <BumpNumber value={session.joined_count} />
-                </div>
-                <PeopleStack count={session.joined_count} />
+    <>
+      <Scene theme={theme} decor={status === 'closed' ? 'closed' : 'default'} right={right} key={status}>
+        <div className="stack grow">
+          {status === 'waiting' && (
+            <>
+              <Sparkles>
+                <h1 className="title title--lg">
+                  Waiting for
+                  <br />
+                  the class
+                </h1>
+              </Sparkles>
+              <div className="big-count">
+                <BumpNumber value={session.joined_count} />
+                <span>{session.joined_count === 1 ? 'person on board' : 'people on board'}</span>
               </div>
-            </div>
-            <ScreenLinkCard sessionId={session.id} />
-            <GoButton label="Start voting" disabled={busy} onClick={() => setStatus('voting')} />
-          </>
-        )}
+              <ScreenLinkCard sessionId={session.id} />
+              <GoButton label="Start voting" disabled={busy} onClick={() => setStatus('voting')} />
+            </>
+          )}
 
-        {status === 'voting' && (
-          <>
-            <div>
-              <p className="eyebrow eyebrow--live">
-                <i aria-hidden="true" /> Voting is open
-              </p>
-              <h1 className="h-title">
-                <Highlight text={POLL.question} mark={POLL.questionHighlight} />
-              </h1>
-            </div>
-            <VoteStats joined={joined} voted={voted} />
-            <LiveSplit session={session} />
-            <GoButton tone="stop" label="Close voting" disabled={busy} onClick={() => setStatus('closed')} />
-          </>
-        )}
+          {status === 'voting' && (
+            <>
+              <Sparkles>
+                <h1 className="title title--lg">{POLL.question}</h1>
+              </Sparkles>
+              <div className="choices choices--host">
+                {['A', 'B'].map((k) => (
+                  <div key={k} className="choice choice--static">
+                    <OptionIcon name={POLL.options[k].icon} />
+                    <span className="choice__label">{POLL.options[k].label}</span>
+                    <span className="choice__count">
+                      <BumpNumber value={k === 'A' ? session.votes_a : session.votes_b} />
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <VoteProgress joined={joined} voted={voted} />
+              <GoButton tone="stop" label="Close voting" disabled={busy} onClick={() => setStatus('closed')} />
+            </>
+          )}
 
-        {status === 'closed' && (
-          <>
-            <div className="card closed-card">
-              <span className="round-icon">
-                <LockIcon />
-              </span>
-              <h1 className="h-title">
-                Voting is <mark className="hl">closed</mark>
-              </h1>
-              <p className="closed-card__total">
-                <span className="closed-card__num">
-                  <AnimatedNumber value={voted} />
-                </span>
-                {voted === 1 ? 'vote is in' : 'votes are in'}
-              </p>
-              <p className="muted">Students see “Voting is closed”. Reveal the results when you&apos;re ready.</p>
-            </div>
-            <GoButton label="Reveal results" disabled={busy} onClick={() => setStatus('results')} />
-            <button className="link-btn" disabled={busy} onClick={() => setStatus('voting')}>
-              Reopen voting
-            </button>
-          </>
-        )}
+          {status === 'closed' && (
+            <>
+              <div className="stack stack--center">
+                <ShipArt />
+                <h1 className="title title--lg">Voting is closed</h1>
+                <p className="lead">
+                  <AnimatedNumber value={voted} /> {voted === 1 ? 'vote is in' : 'votes are in'}. Reveal them when the
+                  class is ready.
+                </p>
+              </div>
+              <GoButton label="Reveal results" disabled={busy} onClick={() => setStatus('results')} />
+              <button className="link-btn" disabled={busy} onClick={() => setStatus('voting')}>
+                Reopen voting
+              </button>
+            </>
+          )}
 
-        {status === 'results' && (
-          <>
-            <div className="card phone-results">
-              <p className="eyebrow">{POLL.question}</p>
-              <WinnerBanner session={session} variant="compact" />
-              <ResultsBars session={session} variant="compact" />
-              <p className="muted results-total">
-                Total votes: <b>{voted}</b>
-              </p>
-            </div>
-            <GoButton label="New session" onClick={() => setShowNew(true)} />
-            <button className="link-btn" disabled={busy} onClick={() => setStatus('closed')}>
-              Hide results
-            </button>
-          </>
-        )}
+          {status === 'results' && (
+            <>
+              <ResultsBars session={session} />
+              <WinnerBanner session={session} />
+              <button className="link-btn" disabled={busy} onClick={() => setStatus('closed')}>
+                Hide results
+              </button>
+            </>
+          )}
 
-        {error && (
-          <p className="form-error" role="alert">
-            {error}
-          </p>
-        )}
-      </main>
+          {error && (
+            <p className="notice" role="alert">
+              {error}
+            </p>
+          )}
+          {footer}
+        </div>
+      </Scene>
 
       {showNew && (
         <div className="modal" role="dialog" aria-modal="true" aria-labelledby="new-title">
           <div className="modal__card">
-            <h2 id="new-title" className="h-title">
-              Start a <mark className="hl">new session?</mark>
+            <h2 id="new-title" className="title title--md">
+              Start a new session?
             </h2>
-            <p className="muted">
-              New QR code, zero votes. The current session (#{session.id}) stays saved in the database.
-            </p>
+            <p className="lead">New QR code, zero votes. Room #{session.id} stays saved in the database.</p>
             <PasscodeForm
               submitLabel="Create new session"
               onCreated={(id, secret) => {
@@ -319,7 +300,7 @@ function HostStage({ host, onCreated, onLost }) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -345,14 +326,14 @@ function ScreenLinkCard({ sessionId }) {
   };
 
   return (
-    <div className="card screen-card">
-      <p className="eyebrow">Big screen</p>
+    <div className="panel screen-card">
+      <span className="label">Big screen</span>
       <p className="screen-card__text">
-        Open this link on the projector. It shows <b>only the QR code</b>.
+        Open this link on the projector — it shows <b>only the QR code</b>.
       </p>
       <div className="screen-card__link">{prettyUrl(link)}</div>
       <div className="screen-card__actions">
-        <button className="chip-btn chip-btn--dark" onClick={copy}>
+        <button className="pill-btn pill-btn--solid" onClick={copy}>
           {copied ? (
             <>
               <CheckIcon /> Copied
@@ -361,59 +342,33 @@ function ScreenLinkCard({ sessionId }) {
             'Copy link'
           )}
         </button>
-        <a className="chip-btn" href={link} target="_blank" rel="noreferrer">
+        <a className="pill-btn" href={link} target="_blank" rel="noreferrer">
           Open ↗
         </a>
       </div>
       {isLocalHostUrl(voteUrl(sessionId)) && (
-        <p className="form-error">Phones can&apos;t open localhost — use the deployed site or set VITE_PUBLIC_APP_URL.</p>
+        <p className="notice">Phones can&apos;t open localhost — use the deployed site or set VITE_PUBLIC_APP_URL.</p>
       )}
     </div>
   );
 }
 
-function VoteStats({ joined, voted }) {
+function VoteProgress({ joined, voted }) {
   const share = joined ? Math.round((voted / joined) * 100) : 0;
   return (
-    <div className="card vote-stats">
-      <div className="vote-stats__row">
-        <div>
-          <span className="eyebrow">Joined</span>
-          <span className="stat__num">
-            <BumpNumber value={joined} />
-          </span>
-        </div>
-        <div>
-          <span className="eyebrow">Voted</span>
-          <span className="stat__num">
+    <div className="vote-progress">
+      <div className="vote-progress__row">
+        <span>
+          <b>
             <BumpNumber value={voted} />
-          </span>
-        </div>
-        <span className="tag">{share}%</span>
+          </b>{' '}
+          of {joined} voted
+        </span>
+        <span>{share}%</span>
       </div>
-      <div className="progress" aria-hidden="true">
-        <div className="progress__fill" style={{ width: `${share}%` }} />
+      <div className="vote-progress__track" aria-hidden="true">
+        <div className="vote-progress__fill" style={{ width: `${share}%` }} />
       </div>
-    </div>
-  );
-}
-
-/** Live A/B counts — only on the host's phone. */
-function LiveSplit({ session }) {
-  return (
-    <div className="live-split">
-      {['A', 'B'].map((k) => (
-        <div key={k} className="live-split__item">
-          <Ocean tone={POLL.options[k].tone} />
-          <div className="live-split__content">
-            <span className="letter-chip">{k}</span>
-            <span className="live-split__label">{POLL.options[k].label}</span>
-            <span className="live-split__num">
-              <BumpNumber value={k === 'A' ? session.votes_a : session.votes_b} />
-            </span>
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
