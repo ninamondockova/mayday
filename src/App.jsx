@@ -2,7 +2,7 @@ import { isConfigured } from './lib/supabase.js';
 import HostApp from './screens/HostApp.jsx';
 import VotePage from './screens/VotePage.jsx';
 import ScreenPage from './screens/ScreenPage.jsx';
-import { Brand } from './components/ui.jsx';
+import { Scene } from './components/ui.jsx';
 
 // Tiny router:
 //   /v/<SESSION>  participant (phone)
@@ -18,6 +18,10 @@ function route() {
 }
 
 export default function App() {
+  return <Page />;
+}
+
+function Page() {
   const r = route();
   if (r.page === 'screen') return <ScreenPage sessionId={r.sessionId} />; // needs no database
   if (!isConfigured) return <SetupNotice />;
@@ -26,15 +30,14 @@ export default function App() {
 
 function SetupNotice() {
   return (
-    <div className="screen center setup">
-      <div className="card setup__card">
-        <Brand />
-        <h1 className="h-title">Almost there</h1>
-        <p>
+    <Scene theme="cream">
+      <div className="stack stack--center grow">
+        <h1 className="title title--lg">Almost there</h1>
+        <p className="lead">
           Supabase is not configured. Add <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> to{' '}
-          <code>.env.local</code> (local) or to Vercel → Settings → Environment Variables, then rebuild.
+          <code>.env.local</code> (local) or to Vercel → Settings → Environment Variables, then redeploy.
         </p>
       </div>
-    </div>
+    </Scene>
   );
 }
